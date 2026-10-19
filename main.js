@@ -1,5 +1,6 @@
 import readline from 'node:readline';
 import { APIClient } from './api.js';
+import { withReadableTitles } from './titles.js';
 import { PRIORITIES } from './models.js';
 import {
   toTasks,
@@ -142,7 +143,7 @@ const handleCommand = (line, state) => {
     case 'search': {
       const word = args.join(' ');
       if (!word) {
-        console.log('Usage: search <word>   e.g. search dolor');
+        console.log('Usage: search <word>   e.g. search report');
         break;
       }
       printTasks(searchByTitle(tasks, word), userMap);
@@ -211,7 +212,8 @@ const handleCommand = (line, state) => {
 
 const loadData = async (client) => {
   const { tasks, users } = await client.getTasksAndUsers();
-  const taskList = toTasks(tasks);
+  // Swap Lorem Ipsum titles for English ones (see titles.js)
+  const taskList = toTasks(withReadableTitles(tasks));
   const userMap = linkTasksToUsers(taskList, buildUserMap(toUsers(users)));
   return { tasks: taskList, userMap };
 };
