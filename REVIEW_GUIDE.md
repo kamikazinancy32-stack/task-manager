@@ -29,7 +29,7 @@ To see the full error and stack trace when something goes wrong, set `DEBUG`:
 | Destructuring | `Task`/`User` constructors, `filterByUsers`, `userReport`, `printSummary`, `handleCommand`, `getTasksAndUsers` |
 | Spread | `sortByTitle`, `sortByPriority` (`[...tasks]`), `markCompleted` (`{ ...task }`), `userReport` (`[...map]`), `handleCommand` (`...ids`) |
 | Rest | `filterByUsers(tasks, ...userIds)`, `const [command, ...args]` in `handleCommand` |
-| ES modules | `import`/`export` in all four source files and the test files, `"type": "module"` in `package.json` |
+| ES modules | `import`/`export` in all five source files (`api.js`, `models.js`, `taskProcessor.js`, `titles.js`, `main.js`) and the test files, `"type": "module"` in `package.json` |
 | `forEach` | `groupByUser`, `printTasks`, `printUsers` |
 | `map` | `toTasks`, `toUsers`, `markCompleted`, `userReport`, `buildUserMap`, `parseIds` |
 | `filter` | `getCompleted`, `getPending`, `filterByPriority`, `searchByTitle`, `filterByUsers`, `parseIds` |
@@ -53,7 +53,7 @@ To see the full error and stack trace when something goes wrong, set `DEBUG`:
 | `Set` | `getUniqueCategories` (unique categories), `getUniqueUserIds`, `filterByUsers` |
 | Closure | `createCachedRequest` in `api.js` (caches API answers), `createCounter` (used in `main.js` `startCli`) |
 | CLI | `main.js` `handleCommand`, `startCli` |
-| Automated tests | `test/taskProcessor.test.js`, `test/models.test.js`, `test/api.test.js` (run with `npm test`) |
+| Automated tests | `test/taskProcessor.test.js`, `test/models.test.js`, `test/api.test.js`, `test/titles.test.js` (run with `npm test`) |
 
 ---
 
@@ -62,16 +62,17 @@ To see the full error and stack trace when something goes wrong, set `DEBUG`:
 - **api.js** talks to the internet and does nothing else. If the API URL changes, this is the only file I edit.
 - **models.js** describes what a Task, PriorityTask and User *are*. It has no network code and does no printing.
 - **taskProcessor.js** holds the "brain": filtering, sorting, counting. Every function takes data in and gives new data back. Nothing in this file prints or fetches. That makes the functions easy to test.
-- **main.js** is the boss. It imports from the other three, loads the data, reads what the user types, and prints results.
+- **titles.js** swaps JSONPlaceholder's Lorem Ipsum titles for English titles, chosen from the task id so the same task always gets the same title. Titles that are already English are left alone. It imports nothing.
+- **main.js** is the boss of the CLI. It imports from `api.js`, `models.js`, `taskProcessor.js` and `titles.js`, loads the data, reads what the user types, and prints results.
 - **test/** holds the automated tests. They use Node's built-in `node:test` and `node:assert`, so nothing extra is installed. They use small made-up data and a fake `fetch`, so they never need the internet.
 
 Import direction (one way only, so there are no circular imports):
 
 ```
-main.js ──► api.js
-   │
-   ├──────► taskProcessor.js ──► models.js
-   └──────────────────────────► models.js  (PRIORITIES)
+main.js ──┬──► api.js
+          ├──► taskProcessor.js ──► models.js
+          ├──► models.js  (PRIORITIES)
+          └──► titles.js
 ```
 
 ## 3. What happens when you run `node main.js`
@@ -452,7 +453,7 @@ response = await fetch(url, { signal: AbortSignal.timeout(this.timeoutMs) });
 
 ## 5. Tests
 
-### Automated tests (`npm test`), 43 tests, all passing
+### Automated tests (`npm test`), 51 tests, all passing
 They are in the `test/` folder and use Node's built-in test runner, so nothing needs installing. **None of them use the internet.** The task tests use a small made-up list of tasks. The API tests replace `fetch` with a fake one and put the real one back afterwards (`afterEach`).
 
 - `test/taskProcessor.test.js` (18 tests):
@@ -482,6 +483,10 @@ They are in the `test/` folder and use Node's built-in test runner, so nothing n
   - `fetchUserTodos` requests the right URL, rejects bad ids without calling the API, and returns `[]` for data that isn't a list
   - `getTasksAndUsers` returns both lists
   - `Promise.all` rejects when one request fails
+- `test/titles.test.js` (8 tests):
+  - `isPlaceholderTitle` spots Lorem Ipsum titles, leaves English titles alone (even with words like "a", "in" or "et"), and is safe with empty or non-text titles
+  - `englishTitleFor` always gives the same title for the same id, gives 200 different titles for ids 1-200, and never fails for unusual ids
+  - `withReadableTitles` replaces only placeholder titles, keeps everything else, and passes malformed data through unchanged
 
 ### Things checked by running the app (not automated)
 - Against the live API: every command (`all`, `completed`, `pending`, `priority`, `priority high`, `sort`, `search`, `user`, `users`, `complete`, `summary`, `help`), in a piped interactive session and as one-off commands.
@@ -610,5 +615,5 @@ Already almost there: `userReport` has `total` and `completed`. In `printUsers`,
 - The timeout covers waiting for the server's answer. A very slow download of the body after that would be reported as a JSON error, not a timeout.
 - `fetchUserTodos` and the cache are used and tested in code, but there's no CLI command that calls `fetchUserTodos`. In a normal run, each endpoint is requested once.
 - `users` only lists users who have at least one task (`userReport` is built from the tasks). With this API, every user has tasks.
-- The automated tests cover `taskProcessor.js`, `models.js` and `api.js`. `main.js` (the commands and printing) is checked by running the app, not by automated tests, because importing `main.js` starts the app.
+- The automated tests cover `taskProcessor.js`, `models.js`, `api.js` and `titles.js`. `main.js` (the commands and printing) is checked by running the app, not by automated tests, because importing `main.js` starts the app.
 - The requirements were checked against the list taken from the lab brief, not the full brief text, so check the brief for any exact method signatures or command names it requires.

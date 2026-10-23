@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: task-manager-demo
-    runtime: node
-    plan: free
-    buildCommand: npm install
-    startCommand: npm run web
-    healthCheckPath: /
