@@ -14,7 +14,7 @@ const pickDueDate = ({ id }, today = new Date()) =>
 // Malformed data: skip anything that is not an object with a whole-number id
 const isValidRecord = (raw) => typeof raw === 'object' && raw !== null && Number.isInteger(raw.id);
 
-// If the API sends something that is not an array, treat it as an empty list
+// If the API (or a caller) sends something that is not an array, treat it as an empty list
 const asList = (value) => (Array.isArray(value) ? value : []);
 
 export const toTasks = (rawTasks = []) =>
@@ -35,34 +35,34 @@ export const toUsers = (rawUsers = []) =>
     .filter(isValidRecord)
     .map((raw) => new User(raw));
 
-export const getOverdue = (tasks) => filterBy(tasks, (task) => task.isOverdue());
+export const getOverdue = (tasks) => filterBy(asList(tasks), (task) => task.isOverdue());
 
-export const getCompleted = (tasks) => filterBy(tasks, (task) => task.isCompleted());
+export const getCompleted = (tasks) => filterBy(asList(tasks), (task) => task.isCompleted());
 
-export const getPending = (tasks) => filterBy(tasks, (task) => !task.isCompleted());
+export const getPending = (tasks) => filterBy(asList(tasks), (task) => !task.isCompleted());
 
 export const filterByPriority = (tasks, level) =>
-  filterBy(tasks, ({ priority }) => priority === level);
+  filterBy(asList(tasks), ({ priority }) => priority === level);
 
-export const searchByTitle = (tasks, word) => searchByProperty(tasks, 'title', word);
+export const searchByTitle = (tasks, word) => searchByProperty(asList(tasks), 'title', word);
 
 export const filterByUsers = (tasks, ...userIds) => {
   const wanted = new Set(userIds);
-  return tasks.filter(({ userId }) => wanted.has(userId));
+  return filterBy(asList(tasks), ({ userId }) => wanted.has(userId));
 };
 
-export const sortByTitle = (tasks) => sortBy(tasks, 'title');
+export const sortByTitle = (tasks) => sortBy(asList(tasks), 'title');
 
 // Sort by id first, then by rank: sortBy is stable, so tasks with the same rank stay in id order
 export const sortByPriority = (tasks) =>
-  sortBy(sortBy(tasks, 'id'), (task) => task.getRank(), 'desc');
+  sortBy(sortBy(asList(tasks), 'id'), (task) => task.getRank(), 'desc');
 
 export const countCompleted = (tasks) =>
-  reduceTo(tasks, (count, task) => (task.isCompleted() ? count + 1 : count), 0);
+  reduceTo(asList(tasks), (count, task) => (task.isCompleted() ? count + 1 : count), 0);
 
 export const summarize = (tasks) =>
   reduceTo(
-    tasks,
+    asList(tasks),
     (totals, task) => {
       totals.total += 1;
       totals[task.isCompleted() ? 'completed' : 'pending'] += 1;
@@ -92,7 +92,7 @@ export const linkTasksToUsers = (tasks, userMap) => {
 export const groupByUser = (tasks) => {
   const groups = new Map();
 
-  tasks.forEach((task) => {
+  asList(tasks).forEach((task) => {
     const list = groups.get(task.userId) ?? [];
     list.push(task);
     groups.set(task.userId, list);
