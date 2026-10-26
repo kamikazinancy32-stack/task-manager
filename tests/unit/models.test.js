@@ -44,6 +44,18 @@ describe('Task', () => {
       expect(new Task({ title: 42 }).title).toBe('Untitled task');
     });
 
+    test('uses the default title when the title is an empty string', () => {
+      expect(new Task({ title: '' }).title).toBe('Untitled task');
+    });
+
+    test('uses the default title when the title is only spaces', () => {
+      expect(new Task({ title: '   ' }).title).toBe('Untitled task');
+    });
+
+    test('keeps a real title exactly as given', () => {
+      expect(new Task({ title: ' Buy milk ' }).title).toBe(' Buy milk ');
+    });
+
     test('only counts completed as true when it is exactly true', () => {
       expect(new Task({ completed: true }).completed).toBe(true);
       expect(new Task({ completed: 'yes' }).completed).toBe(false);
@@ -90,9 +102,12 @@ describe('Task', () => {
 });
 
 describe('PriorityTask', () => {
+  let task;
+
   beforeEach(() => {
     jest.useFakeTimers();
     jest.setSystemTime(TODAY);
+    task = new PriorityTask({ id: 2, title: 'Plan sprint', userId: 5, dueDate: TOMORROW }, 'high');
   });
 
   afterEach(() => {
@@ -101,15 +116,13 @@ describe('PriorityTask', () => {
 
   describe('inheritance', () => {
     test('is an instance of both PriorityTask and Task', () => {
-      const task = new PriorityTask({ id: 1 }, 'high');
       expect(task).toBeInstanceOf(PriorityTask);
       expect(task).toBeInstanceOf(Task);
     });
 
     test('keeps the Task fields and parent methods', () => {
-      const task = new PriorityTask({ id: 3, title: 'Plan sprint', userId: 2 }, 'low');
       expect(task.title).toBe('Plan sprint');
-      expect(task.userId).toBe(2);
+      expect(task.userId).toBe(5);
       expect(task.isCompleted()).toBe(false);
       expect(Object.hasOwn(PriorityTask.prototype, 'isCompleted')).toBe(false);
     });
@@ -152,7 +165,6 @@ describe('PriorityTask', () => {
 
   describe('toggle() (overridden)', () => {
     test('marks the task done and sets the priority to "low"', () => {
-      const task = new PriorityTask({ id: 2 }, 'high');
       expect(task.toggle()).toBe(task);
       expect(task.completed).toBe(true);
       expect(task.priority).toBe('low');
@@ -175,10 +187,9 @@ describe('PriorityTask', () => {
 
     test('a task due today or in the future is not overdue', () => {
       const dueToday = new PriorityTask({ id: 1, dueDate: new Date(2026, 9, 15) });
-      const dueTomorrow = new PriorityTask({ id: 2, dueDate: TOMORROW });
       expect(dueToday.isOverdue()).toBe(false);
-      expect(dueTomorrow.isOverdue()).toBe(false);
-      expect(dueTomorrow.getStatus()).toBe('pending');
+      expect(task.isOverdue()).toBe(false);
+      expect(task.getStatus()).toBe('pending');
     });
 
     test('a task with no due date is never overdue', () => {
@@ -192,7 +203,6 @@ describe('PriorityTask', () => {
     });
 
     test('can be checked against a different "today" passed in', () => {
-      const task = new PriorityTask({ id: 1, dueDate: TOMORROW });
       expect(task.isOverdue(new Date(2026, 9, 20))).toBe(true);
       expect(task.getStatus(new Date(2026, 9, 20))).toBe('overdue');
     });
@@ -200,8 +210,7 @@ describe('PriorityTask', () => {
 
   describe('describe() (overridden)', () => {
     test('adds the priority and the due date to the Task description', () => {
-      const task = new PriorityTask({ id: 5, title: 'Test', dueDate: new Date(2026, 0, 9) }, 'low');
-      expect(task.describe()).toBe('[ ] #5 Test (low, due 2026-01-09)');
+      expect(task.describe()).toBe('[ ] #2 Plan sprint (high, due 2026-10-16)');
     });
 
     test('leaves out the due date when there is none', () => {
