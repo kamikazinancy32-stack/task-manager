@@ -21,7 +21,9 @@ export const formatDate = (date) => {
 };
 
 export class Task {
-  constructor({ id, title = 'Untitled task', completed = false, userId, category = 'general' } = {}) {
+  // "data ?? {}" so that null works like no data at all (a "= {}" default only covers undefined)
+  constructor(data) {
+    const { id, title = 'Untitled task', completed = false, userId, category = 'general' } = data ?? {};
     this.id = id;
     this.title = typeof title === 'string' ? title : 'Untitled task';
     this.completed = completed === true;
@@ -55,10 +57,10 @@ export class Task {
 }
 
 export class PriorityTask extends Task {
-  constructor(data = {}, priority = 'medium') {
+  constructor(data, priority = 'medium') {
     super(data);
     this.priority = PRIORITIES.includes(priority) ? priority : 'medium';
-    this.dueDate = toDate(data.dueDate);
+    this.dueDate = toDate(data?.dueDate);
   }
 
   getRank() {
@@ -92,7 +94,8 @@ export class PriorityTask extends Task {
 }
 
 export class User {
-  constructor({ id, name = 'Unknown user', username = 'unknown', email = 'no email', address } = {}) {
+  constructor(data) {
+    const { id, name = 'Unknown user', username = 'unknown', email = 'no email', address } = data ?? {};
     this.id = id;
     this.name = name;
     this.username = username;
