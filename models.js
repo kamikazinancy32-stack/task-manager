@@ -21,9 +21,12 @@ export const formatDate = (date) => {
 };
 
 export class Task {
-  constructor({ id, title = 'Untitled task', completed = false, userId, category = 'general' } = {}) {
+  // "data ?? {}" so that null works like no data at all (a "= {}" default only covers undefined)
+  constructor(data) {
+    const { id, title = 'Untitled task', completed = false, userId, category = 'general' } = data ?? {};
     this.id = id;
-    this.title = typeof title === 'string' ? title : 'Untitled task';
+    // An empty or spaces-only title counts as no title
+    this.title = typeof title === 'string' && title.trim() !== '' ? title : 'Untitled task';
     this.completed = completed === true;
     this.userId = userId;
     this.category = category;
@@ -55,10 +58,10 @@ export class Task {
 }
 
 export class PriorityTask extends Task {
-  constructor(data = {}, priority = 'medium') {
+  constructor(data, priority = 'medium') {
     super(data);
     this.priority = PRIORITIES.includes(priority) ? priority : 'medium';
-    this.dueDate = toDate(data.dueDate);
+    this.dueDate = toDate(data?.dueDate);
   }
 
   getRank() {
@@ -92,7 +95,8 @@ export class PriorityTask extends Task {
 }
 
 export class User {
-  constructor({ id, name = 'Unknown user', username = 'unknown', email = 'no email', address } = {}) {
+  constructor(data) {
+    const { id, name = 'Unknown user', username = 'unknown', email = 'no email', address } = data ?? {};
     this.id = id;
     this.name = name;
     this.username = username;
@@ -101,7 +105,11 @@ export class User {
     this.tasks = [];
   }
 
+  // Only real tasks are accepted, so the other methods can always call task.isCompleted()
   addTask(task) {
+    if (!(task instanceof Task)) {
+      throw new Error('addTask() needs a Task object.');
+    }
     this.tasks.push(task);
     return this;
   }
