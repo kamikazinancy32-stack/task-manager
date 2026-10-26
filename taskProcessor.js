@@ -1,4 +1,5 @@
 import { PriorityTask, User, pickPriority } from './models.js';
+import { filterBy, reduceTo, searchByProperty, sortBy } from './utils.js';
 
 // JSONPlaceholder has no categories or due dates either, so these are made up from the id.
 // This is demo data, so the Set, isOverdue() and getStatus() have something to work with.
@@ -34,36 +35,34 @@ export const toUsers = (rawUsers = []) =>
     .filter(isValidRecord)
     .map((raw) => new User(raw));
 
-export const getOverdue = (tasks) => tasks.filter((task) => task.isOverdue());
+export const getOverdue = (tasks) => filterBy(tasks, (task) => task.isOverdue());
 
-export const getCompleted = (tasks) => tasks.filter((task) => task.isCompleted());
+export const getCompleted = (tasks) => filterBy(tasks, (task) => task.isCompleted());
 
-export const getPending = (tasks) => tasks.filter((task) => !task.isCompleted());
+export const getPending = (tasks) => filterBy(tasks, (task) => !task.isCompleted());
 
 export const filterByPriority = (tasks, level) =>
-  tasks.filter(({ priority }) => priority === level);
+  filterBy(tasks, ({ priority }) => priority === level);
 
-export const searchByTitle = (tasks, word) => {
-  const needle = word.toLowerCase();
-  return tasks.filter(({ title }) => title.toLowerCase().includes(needle));
-};
+export const searchByTitle = (tasks, word) => searchByProperty(tasks, 'title', word);
 
 export const filterByUsers = (tasks, ...userIds) => {
   const wanted = new Set(userIds);
   return tasks.filter(({ userId }) => wanted.has(userId));
 };
 
-export const sortByTitle = (tasks) =>
-  [...tasks].sort((a, b) => a.title.localeCompare(b.title));
+export const sortByTitle = (tasks) => sortBy(tasks, 'title');
 
+// Sort by id first, then by rank: sortBy is stable, so tasks with the same rank stay in id order
 export const sortByPriority = (tasks) =>
-  [...tasks].sort((a, b) => b.getRank() - a.getRank() || a.id - b.id);
+  sortBy(sortBy(tasks, 'id'), (task) => task.getRank(), 'desc');
 
 export const countCompleted = (tasks) =>
-  tasks.reduce((count, task) => (task.isCompleted() ? count + 1 : count), 0);
+  reduceTo(tasks, (count, task) => (task.isCompleted() ? count + 1 : count), 0);
 
 export const summarize = (tasks) =>
-  tasks.reduce(
+  reduceTo(
+    tasks,
     (totals, task) => {
       totals.total += 1;
       totals[task.isCompleted() ? 'completed' : 'pending'] += 1;
