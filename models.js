@@ -104,7 +104,11 @@ export class User {
     this.tasks = [];
   }
 
+  // Only real tasks are accepted, so the other methods can always call task.isCompleted()
   addTask(task) {
+    if (!(task instanceof Task)) {
+      throw new Error('addTask() needs a Task object.');
+    }
     this.tasks.push(task);
     return this;
   }
