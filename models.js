@@ -25,7 +25,8 @@ export class Task {
   constructor(data) {
     const { id, title = 'Untitled task', completed = false, userId, category = 'general' } = data ?? {};
     this.id = id;
-    this.title = typeof title === 'string' ? title : 'Untitled task';
+    // An empty or spaces-only title counts as no title
+    this.title = typeof title === 'string' && title.trim() !== '' ? title : 'Untitled task';
     this.completed = completed === true;
     this.userId = userId;
     this.category = category;
