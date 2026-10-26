@@ -6,9 +6,37 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
-    "test": "node --test"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:node": "node --test \"test/*.test.js\""
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@babel/core": "^8.0.9",
+    "@babel/preset-env": "^8.0.7",
+    "babel-jest": "^30.5.2",
+    "jest": "^30.5.2"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "roots": [
+      "<rootDir>/tests"
+    ],
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "<rootDir>/*.js",
+      "!<rootDir>/main.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 80,
+        "lines": 80,
+        "branches": 75,
+        "functions": 85
+      }
+    }
   }
 }
