@@ -135,9 +135,7 @@ name that one function writes and another does not read). These tests catch that
 
 ## Test Coverage Analysis
 
-<!-- Add your coverage screenshot here, e.g. ![Coverage report](docs/coverage.png) -->
-
-**Screenshot:** _placeholder_
+![Coverage report](Doc/Coverg.png)
 
 Result of `npm run test:coverage`:
 
@@ -163,64 +161,23 @@ Result of `npm run test:coverage`:
 
 ## Challenges & Solutions
 
-<!-- rewrite in my own words -->
+1. **Getting Jest to run my code.** My project uses ES modules (`import`/`export`), but Jest expects CommonJS. I added Babel to convert the code, and I had to name the config `babel.config.cjs` because a `.js` file would be read as an ES module.
 
-1. **Jest and ES modules.** The project uses `"type": "module"`, but Jest runs CommonJS by
-   default. I added Babel with `@babel/preset-env`. The config file had to be `babel.config.cjs`:
-   in a `"type": "module"` project, a `.js` config file would itself be treated as an ES module.
+2. **My tests found bugs.** Testing strange input showed four problems: the classes crashed when given `null`, `addTask()` accepted things that were not tasks, blank titles stayed blank, and the processing functions crashed on `null`. For each one I wrote a failing test first, fixed the code, and checked that the test passed.
 
-2. **The tests found real bugs.** I fixed each one test-first, in its own commit:
-   - `new Task(null)`, `new PriorityTask(null)` and `new User(null)` crashed. A default like
-     `= {}` only works for `undefined`, not `null`. Fix: unpack `data ?? {}` inside the constructor.
-   - `user.addTask(null)` was accepted, and the crash only came later in `getCompletionRate()`,
-     far from the real mistake. Fix: `addTask()` now throws `'addTask() needs a Task object.'`
-     unless it gets a Task.
-   - An empty or blank title (`''`, `'   '`) was kept, so the CLI printed a task with no name.
-     Fix: blank titles now get `'Untitled task'`, like `null` titles already did.
-   - Processing functions such as `getCompleted(null)` or `summarize(undefined)` crashed with
-     a TypeError. Fix: they now treat anything that is not a list as an empty list.
+3. **Dates kept changing.** Overdue tasks depend on today's date, so results would change every day. I used Jest's fake timers to fix "today" to one date. The timeout test needed a different approach, because fake timers don't control `AbortSignal.timeout()`.
 
-3. **Tests that depend on today's date.** `toTasks()` makes due dates from today's date, so the
-   overdue results would change every day. `jest.useFakeTimers()` with `jest.setSystemTime()`
-   fixes "today". The timeout test was different: `AbortSignal.timeout()` is not controlled by
-   Jest's fake timers. So that test gives the client a 20 ms timeout and uses a fake `fetch`
-   that never answers.
+4. **Refactoring without breaking things.** I moved repeated logic into `utils.js`. To be sure nothing changed, I ran the old tests before and after, and I also compared the old and new functions on 500 random tasks.
 
-4. **Refactoring safely.** `taskProcessor.js` was changed to use the new `utils.js` helpers.
-   The old tests passed before and after, but they only sort 3 tasks. So I also compared the old
-   and new functions on 500 random tasks, and the results were identical. `sortByPriority` needed
-   care to keep the same tie-break (by id): it sorts by id first and then by rank, which works
-   because JavaScript's sort is stable.
-
-5. **Spying on a module's own functions.** `jest.spyOn(utils, 'sortBy')` only works because Babel
-   turns the modules into CommonJS objects that can be changed. With native ES modules, exports
-   cannot be overwritten, and `jest.unstable_mockModule` would be needed instead.
-
-6. **Checking that the tests can fail.** A test that can never fail is useless. To check the
-   "does not change the original list" tests, I broke `sortBy` on purpose so it sorted the
-   original list, and 3 tests failed. Then I put the code back.
-
-7. **Two test folders.** The first lab's `node:test` tests are in `test/`, and the Jest tests are
-   in `tests/`. Jest is limited to `tests/` so it does not try to run the old files. Also,
-   `node --test test/` stopped working on Node 21+ (it no longer accepts a folder), so the
-   script uses `node --test "test/*.test.js"`.
+5. **Making sure tests can fail.** I broke `sortBy` on purpose to check that my "does not change the original list" tests would catch it. They did, and then I put the code back.
 
 ## Key Learnings
 
-<!-- rewrite in my own words -->
-
-- Writing tests for unusual input (`null`, empty strings, empty lists) found real bugs in code
-  that already "worked" in normal use.
-- Writing the failing test first proves the test checks the right thing, and the same test
-  keeps the bug from coming back.
-- Good tests do not depend on the internet or on the date. Mocks and fake timers make them
-  fast and give the same result every time.
-- `beforeEach`/`afterEach` keep tests independent. Each test starts fresh and cleans up after
-  itself (timers, `fetch`, console spies).
-- Coverage shows which lines ran, not whether the results were checked. A high number only
-  counts if the tests have real `expect` checks.
-- Clear error messages help the person using the code, and they also make `toThrow('...')`
-  tests exact.
+- Testing unusual input like `null`, empty strings and empty lists finds bugs that normal use hides.
+- Writing the failing test first proves the test really checks the problem, and it stops the bug from coming back.
+- Mocking `fetch` and fixing the date makes tests fast, and they give the same result every time, even without internet.
+- `beforeEach` and `afterEach` keep every test independent.
+- High coverage only means the code ran. The `expect` checks are what prove it works.
 
 ## Differences Between Test Types
 
